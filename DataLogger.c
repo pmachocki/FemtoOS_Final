@@ -67,8 +67,7 @@ void appBoot(void)
 { 
     devLedDRR    = 0xFF;
     devSwitchDRR = 0xFF;
-    
-    
+    InitalizeAnalogSensor();
 }
 
 /* ========================================================================= */
@@ -77,7 +76,7 @@ void appBoot(void)
 
 Tuint16 GetAnalogSensorReading( void )
 {
-    return 0;
+    return ADC;
 }
 
 Tuint16 GetDigitalSensorReading( void )
@@ -87,7 +86,13 @@ Tuint16 GetDigitalSensorReading( void )
 
 void InitalizeAnalogSensor( void )
 {
-    
+    // AREF = AVcc, Pin ADC0
+    ADMUX = (1 << REFS0);
+    // ADC Enable, Free-Running and prescaler of 128
+    ADCSRA = (1 << ADEN) | (1 << ADPS2) |  (1 << ADPS1) | (1 << ADPS0)
+    | (1 << ADATE);
+    // Start Conversion
+    ADCSRA |= (1 << ADSC);
 }
 
 void InitalizeDigitalSensor( void )
@@ -167,7 +172,7 @@ void appLoop_ReadTask(void)
         
     	if (taskMutexRequestOnName(AnalogSample, defLockDoNotBlock))
         {
-            analogValue++;
+            analogValue = GetAnalogSensorReading();
             taskMutexReleaseOnName(AnalogSample);
         }    
         
