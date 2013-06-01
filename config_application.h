@@ -45,7 +45,7 @@
 #define  cfgSysClockDivider                      1
 #define  cfgSysSubTicksPerFullTick               32
 #define  cfgSysSubTickDivider                    256
-#define  cfgSysGCCstartup                        cfgOverride
+#define  cfgSysGCCstartup                        cfgKeep
 #define  cfgSysFsStorageSpace                    512
 
 
@@ -94,7 +94,7 @@
 #define  cfgUsePriorityLifting                   cfgFalse
 #define  cfgUseTaskWatchdog                      cfgFalse
 #define  cfgUseCorrectWakeupTimes                cfgFalse
-#define  cfgUseTimeout                           cfgFalse
+#define  cfgUseTimeout                           cfgTrue
 #define  cfgUseTasknames                         cfgFalse
 #define  cfgUseLowPowerSleep                     cfgFalse
 #define  cfgUseLowPowerOnDelay                   cfgFalse
@@ -293,9 +293,9 @@
 /* ========================================================================= */
 
 #define  PriorityOverride                        0
-#define  Priority_TimerTask                         1
-#define  Priority_ReadTask                      1
-#define  Priority_LogTask                       3
+//#define  Priority_TimerTask                         1
+//#define  Priority_ReadTask                      1
+//#define  Priority_LogTask                       3
 
 
 /* ========================================================================= */

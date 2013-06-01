@@ -48,6 +48,11 @@
 
 #define DEBUG
 
+	Tuint08 analogValue = 0x00;
+	Tuint08 digitalValue = 0x00;
+    
+    Tuint08 mode;
+    
 // This function runs when the OS is first initialized
 void appBoot(void)
 { 
@@ -80,13 +85,16 @@ void appLoop_TimerTask(void)
 	{
         tenHz++;
         currMode = READ_TASK_EVENT;
-
+        genFireEvent(READ_TASK_EVENT);
+        
         if (tenHz % 5 == 0)
         {
             currMode = LOG_TASK_EVENT;
+            genFireEvent(LOG_TASK_EVENT);
         }
-        genFireEvent(READ_TASK_EVENT);
         
+        
+                
 #ifdef DEBUG
         TOGGLE_PBLED(PB0);
 #endif //DEBUG
@@ -121,30 +129,40 @@ void appLoop_TimerTask(void)
 
 void appLoop_ReadTask(void)
 {
-	Tuint08 analogValue = 0x00;
-	Tuint08 digitalValue = 0x00;
+
 	Tuint08 success = 0x00;
 		
 	while (true)
 	{
-    	taskWaitForEvent(READ_TASK_EVENT);
+    	taskWaitForEvent(READ_TASK_EVENT, 0xff);
 #ifdef DEBUG
     	TOGGLE_PDLED(PD7);
 #endif //DEBUG
 
+        
     	//Get actual values here.
     	//GetSensorData(); // Writes to sensor data queue
-    	/*
-    	taskQueuWriteRequestOnName(AnalogSample, 1);
-    	genQueuClearOnName(AnalogSample);
-    	genQueuWriteOnName(AnalogSample, analogValue++);
-    	taskQueuReleaseOnName(AnalogSample);
-
+    	if (taskMutexRequestOnName(AnalogSample, defLockDoNotBlock))
+        {
+            analogValue++;
+            taskMutexReleaseOnName(AnalogSample);
+            TOGGLE_PBLED(PB2);
+        }            
+    	//genQueuClearOnName(AnalogSample);
+    	//genQueuWriteOnName(AnalogSample, analogValue++);
+    	//taskQueuReleaseOnName(AnalogSample);
+        //TOGGLE_PBLED(PB2);
+        //}        
+       //TOGGLE_PDLED(PD7);
+        
+        
+                
+        /*
     	taskQueuWriteRequestOnName(DigitalSample, 1);
     	genQueuClearOnName(DigitalSample);
     	genQueuWriteOnName(DigitalSample, digitalValue++);
     	taskQueuReleaseOnName(DigitalSample);
-*/
+        */
     	//genFireEvent(LOG_TASK_EVENT);
 	}
 }
