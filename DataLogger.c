@@ -78,34 +78,27 @@ void appLoop_TimerTask(void)
 	
 	while (true)
 	{
-        /*
         tenHz++;
         currMode = READ_TASK_EVENT;
-        
-        
-        
+
         if (tenHz % 5 == 0)
         {
-            //currMode = LOG_TASK_EVENT;
-            #ifdef DEBUG
-            TOGGLE_PBLED(PB1);
-            #endif //DEBUG
+            currMode = LOG_TASK_EVENT;
         }
 
-        genFireEvent(currMode);
+        //genFireEvent(currMode);
         
-            #ifdef DEBUG
-            TOGGLE_PBLED(PB0);
-            #endif //DEBUG
-            
+#ifdef DEBUG
+        TOGGLE_PBLED(PB0);
+#endif //DEBUG
         if (currMode)
         {
-            
-        ;
+#ifdef DEBUG
+            TOGGLE_PBLED(PB1);
+#endif //DEBUG
         }        
 
 		taskDelayFromNow(20);
-        */
 	} 
 }
 #endif
