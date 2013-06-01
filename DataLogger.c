@@ -36,29 +36,45 @@
 /* This this the only include needed in your code .*/
 #include "femtoos_code.h"
 
+/* ========================================================================= */
+/* LOCAL DEFINES =========================================================== */
+/* ========================================================================= */
 #define READ_TASK_EVENT 0
-#define CALC_TASK_EVENT 1
-#define READ_AND_LOG_TASK_EVENT 2
-#define CALC_AND_LOG_TASK_EVENT 3
 #define LOG_TASK_EVENT 1
-#define TIMER_50HZ 20000
+#define DELAY_50HZ 20
 
 #define TOGGLE_PBLED(x) (devLedPORT ^= (1 << x))
 #define TOGGLE_PDLED(x) (devSwitchPORT ^= (1 << x))
 
 #define DEBUG
 
-Tuint08 analogValue = 0x00;
-Tuint08 digitalValue = 0x00;
+/* ========================================================================= */
+/* GLOBAL VARIABLES ======================================================== */
+/* ========================================================================= */
+Tuint16 analogValue = 0x00;
+Tuint16 digitalValue = 0x00;
 
-    
+/* ========================================================================= */
+/* FUNCTION PROTOTYPES ===================================================== */
+/* ========================================================================= */
+Tword GetAnalogSensorReading(void);
+Tword GetDigitalSensorReading(void);
+void InitalizeAnalogSensor(void);
+void InitalizeDigitalSensor(void);
+void WriteToMemory(Tword *out, Taddress *address);
+
 // This function runs when the OS is first initialized
 void appBoot(void)
 { 
     devLedDRR    = 0xFF;
     devSwitchDRR = 0xFF;
+    
+    
 }
 
+/* ========================================================================= */
+/* TASKS =================================================================== */
+/* ========================================================================= */
 /*
 *******************************************************************************
 *                               TIMER TASK
@@ -94,19 +110,17 @@ void appLoop_TimerTask(void)
 #endif //DEBUG 
             genFireEvent(LOG_TASK_EVENT);
         }
-		taskDelayFromNow(20);
+		taskDelayFromNow(DELAY_50HZ);
 	} 
 }
 #endif
-
 
 /*
 *******************************************************************************
 *                               READ TASK
 *
-* Description : This is the main timing task. We are running at 50 Hz and
-                triggering a sensor read event at 50 Hz, while triggering a 
-                write event at 10 Hz. 
+* Description : This task is responsible for getting sensor values and calc-
+                ulating the average that will be saved in memory.
 *
 * Arguments   : none
 *
@@ -126,7 +140,7 @@ void appLoop_ReadTask(void)
 #endif //DEBUG
        
     	//Get actual values here.
-    	//GetSensorData(); // Writes to sensor data queue
+    	//GetSensorData();
         
     	if (taskMutexRequestOnName(AnalogSample, defLockDoNotBlock))
         {
@@ -144,15 +158,25 @@ void appLoop_ReadTask(void)
 
 #endif
 
-// The logging does appear to be happening here, as it seems to be done in the 
-// task above, calc_and_log. Is this because we are still experimenting?
-// Yes I moved the logging up in order to test queues and events using only two tasks. Once the events are fixed we can move it back down here.
+/*
+*******************************************************************************
+*                               LOG TASK
+*
+* Description : The log task is responsible for writing the calculated sensor
+                values to the EEPROM. This task is running at 10 Hz.
+*
+* Arguments   : none
+*
+* Returns     : none
+*
+*******************************************************************************
+*/
 #if (preTaskDefined(LogTask))
 
 void appLoop_LogTask(void)
 {	
-	Tuint08 analogCalc = 0x00;
-	Tuint08 digitalCalc = 0x00;
+	Tword analogCalc = 0x00;
+	Tword digitalCalc = 0x00;
 	
 	Taddress address = 512;
 	Tbyte valueOut;
@@ -161,25 +185,61 @@ void appLoop_LogTask(void)
 	{
         while(address <= 1024)
         {
-		    taskWaitForEvent(LOG_TASK_EVENT, 800);
+            taskWaitForEvent(LOG_TASK_EVENT, 800);
             TOGGLE_PBLED(PB2);
-        
+            
             taskMutexRequestOnName(AnalogSample, 1);
             analogCalc = analogValue;
             taskMutexReleaseOnName(AnalogSample);
             
+            // Put this in a function call
             while(!portFSWriteReady());
-            valueOut = ~analogCalc;
+            valueOut = ~(analogCalc >> 8);
             portFSWriteByte(address++, valueOut);
-        
+            while(!portFSWriteReady());
+            valueOut = ~(analogCalc);
+            portFSWriteByte(address++, valueOut);
+            
+            
             taskMutexRequestOnName(DigitalSample, 1);
             digitalCalc = digitalValue;
             taskMutexReleaseOnName(DigitalSample);
             
             while(!portFSWriteReady());
-            valueOut = ~digitalCalc;
+            valueOut = ~(digitalCalc >> 8);
             portFSWriteByte(address++, valueOut);
-        }        
+            while(!portFSWriteReady());
+            valueOut = ~(digitalCalc);
+            portFSWriteByte(address++, valueOut);
+        }
 	}
 }
 #endif
+
+/* ========================================================================= */
+/* HELPER FUNCTIONS ======================================================== */
+/* ========================================================================= */
+
+Tuint16 GetAnalogSensorReading( void )
+{
+    return 0;
+}
+
+Tuint16 GetDigitalSensorReading( void )
+{
+	return 0;
+}
+
+void InitalizeAnalogSensor( void )
+{
+	
+}
+
+void InitalizeDigitalSensor( void )
+{
+	
+}
+
+void WriteToMemory(Tword *out, Taddress *address)
+{
+}
