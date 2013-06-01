@@ -57,11 +57,10 @@ Tuint16 digitalValue = 0x00;
 /* ========================================================================= */
 /* FUNCTION PROTOTYPES ===================================================== */
 /* ========================================================================= */
-Tword GetAnalogSensorReading(void);
-Tword GetDigitalSensorReading(void);
-void InitalizeAnalogSensor(void);
-void InitalizeDigitalSensor(void);
-void WriteToMemory(Tword *out, Taddress *address);
+static Tword GetAnalogSensorReading(void);
+static Tword GetDigitalSensorReading(void); 
+static void InitalizeAnalogSensor(void); 
+static void InitalizeDigitalSensor(void); 
 
 // This function runs when the OS is first initialized
 void appBoot(void)
@@ -69,6 +68,30 @@ void appBoot(void)
     devLedDRR    = 0xFF;
     devSwitchDRR = 0xFF;
     
+    
+}
+
+/* ========================================================================= */
+/* HELPER FUNCTIONS ======================================================== */
+/* ========================================================================= */
+
+Tuint16 GetAnalogSensorReading( void )
+{
+    return 0;
+}
+
+Tuint16 GetDigitalSensorReading( void )
+{
+    return 0;
+}
+
+void InitalizeAnalogSensor( void )
+{
+    
+}
+
+void InitalizeDigitalSensor( void )
+{
     
 }
 
@@ -192,14 +215,12 @@ void appLoop_LogTask(void)
             analogCalc = analogValue;
             taskMutexReleaseOnName(AnalogSample);
             
-            // Put this in a function call
             while(!portFSWriteReady());
             valueOut = ~(analogCalc >> 8);
             portFSWriteByte(address++, valueOut);
             while(!portFSWriteReady());
             valueOut = ~(analogCalc);
             portFSWriteByte(address++, valueOut);
-            
             
             taskMutexRequestOnName(DigitalSample, 1);
             digitalCalc = digitalValue;
@@ -216,30 +237,4 @@ void appLoop_LogTask(void)
 }
 #endif
 
-/* ========================================================================= */
-/* HELPER FUNCTIONS ======================================================== */
-/* ========================================================================= */
 
-Tuint16 GetAnalogSensorReading( void )
-{
-    return 0;
-}
-
-Tuint16 GetDigitalSensorReading( void )
-{
-	return 0;
-}
-
-void InitalizeAnalogSensor( void )
-{
-	
-}
-
-void InitalizeDigitalSensor( void )
-{
-	
-}
-
-void WriteToMemory(Tword *out, Taddress *address)
-{
-}
