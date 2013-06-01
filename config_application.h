@@ -237,7 +237,7 @@
 //#define  CN_02									 CalcTask
 //#define  CN_03									 ReadAndLogTask
 //#define  CN_04									 CalcAndLogTask
-//#define  CN_02									 LogTask
+#define  CN_02									 LogTask
 //#define  CN_06                                   Display
 //#define  CN_07                                   Speed
 //#define  CN_08									 Sampler
@@ -252,7 +252,7 @@
 //#define  TaskInclude_CalcTask                    cfgStartRunning
 //#define  TaskInclude_ReadAndLogTask              cfgStartRunning
 //#define  TaskInclude_CalcAndLogTask              cfgStartRunning
-//#define  TaskInclude_LogTask                     cfgStartRunning
+#define  TaskInclude_LogTask                     cfgStartRunning
 //#define  TaskInclude_Display                     cfgExclude
 //#define  TaskInclude_Speed                       cfgExclude
 //#define  TaskInclude_Sampler					 cfgExclude

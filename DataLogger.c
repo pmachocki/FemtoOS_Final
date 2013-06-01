@@ -146,7 +146,7 @@ void appLoop_ReadTask(void)
         {
             analogValue++;
             taskMutexReleaseOnName(AnalogSample);
-            TOGGLE_PBLED(PB2);
+            //TOGGLE_PBLED(PB2);
         }            
     	//genQueuClearOnName(AnalogSample);
     	//genQueuWriteOnName(AnalogSample, analogValue++);
@@ -331,7 +331,7 @@ void appLoop_CalcAndLogTask(void)
 
 #endif
 */
-/*
+
 // The logging does appear to be happening here, as it seems to be done in the 
 // task above, calc_and_log. Is this because we are still experimenting?
 // Yes I moved the logging up in order to test queues and events using only two tasks. Once the events are fixed we can move it back down here.
@@ -353,23 +353,21 @@ void appLoop_LogTask(void)
 	{
         while(address <= 1024)
         {
-		    taskWaitForEvent(LOG_TASK_EVENT);
+		    taskWaitForEvent(LOG_TASK_EVENT, 800);
             TOGGLE_PBLED(PB2);
         
-		    //Calc(); // Reads from averaging queue, writes to EEPROM
-		
-            taskQueuReadRequestOnName(AnalogSample, 1);
-            analogCalc = genQueuReadOnName(AnalogSample);
-            taskQueuReleaseOnName(AnalogSample);
-        
+            taskMutexRequestOnName(AnalogSample, 1);
+            analogCalc = analogValue;
+            taskMutexReleaseOnName(AnalogSample);
+            
             while(!portFSWriteReady());
             valueOut = ~analogCalc;
             portFSWriteByte(address++, valueOut);
         
-            taskQueuReadRequestOnName(DigitalSample, 1);
-            digitalCalc = genQueuReadOnName(DigitalSample);
-            taskQueuReleaseOnName(DigitalSample);
-        
+            taskMutexRequestOnName(DigitalSample, 1);
+            digitalCalc = digitalValue;
+            taskMutexReleaseOnName(DigitalSample);
+            
             while(!portFSWriteReady());
             valueOut = ~digitalCalc;
             portFSWriteByte(address++, valueOut);
@@ -377,4 +375,3 @@ void appLoop_LogTask(void)
 	}
 }
 #endif
-*/
