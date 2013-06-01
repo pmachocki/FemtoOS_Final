@@ -234,14 +234,7 @@
 
 #define  CN_00									 TimerTask
 #define  CN_01									 ReadTask
-//#define  CN_02									 CalcTask
-//#define  CN_03									 ReadAndLogTask
-//#define  CN_04									 CalcAndLogTask
 #define  CN_02									 LogTask
-//#define  CN_06                                   Display
-//#define  CN_07                                   Speed
-//#define  CN_08									 Sampler
-
 
 /* ========================================================================= */
 /* INCLUDE TASKS =========================================================== */
@@ -249,14 +242,7 @@
 
 #define  TaskInclude_TimerTask                   cfgStartRunning
 #define  TaskInclude_ReadTask                    cfgStartRunning
-//#define  TaskInclude_CalcTask                    cfgStartRunning
-//#define  TaskInclude_ReadAndLogTask              cfgStartRunning
-//#define  TaskInclude_CalcAndLogTask              cfgStartRunning
 #define  TaskInclude_LogTask                     cfgStartRunning
-//#define  TaskInclude_Display                     cfgExclude
-//#define  TaskInclude_Speed                       cfgExclude
-//#define  TaskInclude_Sampler					 cfgExclude
-
 
 /* ========================================================================= */
 /* TASK CAPABILITIES ======================================================= */
@@ -293,10 +279,6 @@
 /* ========================================================================= */
 
 #define  PriorityOverride                        0
-//#define  Priority_TimerTask                         1
-//#define  Priority_ReadTask                      1
-//#define  Priority_LogTask                       3
-
 
 /* ========================================================================= */
 /* REGISTER USE ============================================================ */
@@ -304,13 +286,7 @@
 
 #define  RegisterUse_TimerTask                   registersAll
 #define  RegisterUse_ReadTask                    registersAll
-//#define  RegisterUse_CalcTask                    registersAll
-//#define  RegisterUse_ReadAndLogTask              registersAll
-//#define  RegisterUse_CalcAndLogTask              registersAll
 #define  RegisterUse_LogTask                     registersAll
-//#define  RegisterUse_Display                     registersAll
-//#define  RegisterUse_Speed                       registersAll
-//#define  RegisterUse_Sampler					 registersAll
 
 
 /* ========================================================================= */
@@ -332,9 +308,6 @@
 /* ========================================================================= */
 
 #define  EN_00                                   Read
-//#define  EN_01                                   Calc
-//#define  EN_02                                   ReadAndLog
-//#define  EN_03                                   CalcAndLog
 #define  EN_01                                   Log
 
 
@@ -369,23 +342,23 @@
 /* SLOT USAGE ============================================================== */
 /* ========================================================================= */
 
-#define  SlotUse_AnalogSample                         cfgUseAsQueu
-#define  SlotUse_DigitalSample                        cfgUseAsQueu
-#define  SlotUse_AnalogAverage                        cfgUseAsQueu
-#define  SlotUse_DigitalAverage                       cfgUseAsQueu
-#define  SlotUse_AnalogSampleSync                       cfgUseAsWait
-#define  SlotUse_ThePipe                       cfgUseAsQueu
+#define  SlotUse_AnalogSample                   cfgUseAsQueu
+#define  SlotUse_DigitalSample                  cfgUseAsQueu
+#define  SlotUse_AnalogAverage                  cfgUseAsQueu
+#define  SlotUse_DigitalAverage                 cfgUseAsQueu
+#define  SlotUse_AnalogSampleSync               cfgUseAsWait
+#define  SlotUse_ThePipe                        cfgUseAsQueu
 
 
 /* ========================================================================= */
 /* QUEU SIZES ============================================================== */
 /* ========================================================================= */
 
-#define  QueuSize_AnalogSample                         1
-#define  QueuSize_DigitalSample                        1
-#define  QueuSize_AnalogAverage                        1
-#define  QueuSize_DigitalAverage                       1
-#define  QueuSize_ThePipe                       2
+#define  QueuSize_AnalogSample                      1
+#define  QueuSize_DigitalSample                     1
+#define  QueuSize_AnalogAverage                     1
+#define  QueuSize_DigitalAverage                    1
+#define  QueuSize_ThePipe                           2
 
 
 /* ========================================================================= */
