@@ -51,8 +51,8 @@
 /* ========================================================================= */
 /* GLOBAL VARIABLES ======================================================== */
 /* ========================================================================= */
-Tuint16 analogValue = 0x00;
-Tuint16 digitalValue = 0x00;
+//Tuint16 analogValue = 0x00;
+//Tuint16 digitalValue = 0x00;
 
 /* ========================================================================= */
 /* FUNCTION PROTOTYPES ===================================================== */
@@ -136,7 +136,7 @@ void appLoop_TimerTask(void)
 #ifdef DEBUG
            TOGGLE_PBLED(PB1);
 #endif //DEBUG 
-            genFireEvent(LOG_TASK_EVENT);
+            //genFireEvent(LOG_TASK_EVENT);
         }
 		taskDelayFromNow(DELAY_50HZ);
 	} 
@@ -160,28 +160,36 @@ void appLoop_TimerTask(void)
 
 void appLoop_ReadTask(void)
 {
+	Tuint08 analogValue = 0x00;
+	Tuint08 digitalValue = 0x00;
+	Tuint08 success = 0x00;
 	while (true)
 	{
-    	taskWaitForEvent(READ_TASK_EVENT, 0xff);
-#ifdef DEBUG
-    	TOGGLE_PDLED(PD7);
-#endif //DEBUG
+		if (taskWaitForEvent(READ_TASK_EVENT, 800)) 
+        {
+	#ifdef DEBUG
+    		TOGGLE_PDLED(PD7);
+	#endif //DEBUG
        
     	//Get actual values here.
     	//GetSensorData();
         
-    	if (taskMutexRequestOnName(AnalogSample, defLockDoNotBlock))
-        {
-            analogValue = GetAnalogSensorReading();
-            taskMutexReleaseOnName(AnalogSample);
-        }    
-        
-        if (taskMutexRequestOnName(DigitalSample, defLockDoNotBlock))
-        {
-            digitalValue = 0;
-            taskMutexReleaseOnName(DigitalSample);
-        }        
-	}
+			success = 0x00;
+			while (!success) 
+            {
+    			if (taskQueuWriteRequestOnName(AnalogSample, 1, defLockDoNotBlock))
+    			{
+					genQueuClearOnName(AnalogSample);
+	    			genQueuWriteOnName(AnalogSample, analogValue++);
+	    			taskQueuReleaseOnName(AnalogSample);
+				
+					success = 0x01;
+				
+					genFireEvent(LOG_TASK_EVENT); // i fire the log task here to give the read task a chance to write to the queue
+    			}
+			}		
+		}
+    }        
 }
 
 #endif
@@ -203,40 +211,50 @@ void appLoop_ReadTask(void)
 
 void appLoop_LogTask(void)
 {	
-	Tword analogCalc = 0x00;
-	Tword digitalCalc = 0x00;
+	Tuint08 analogCalc = 0x00;
+	//Tword digitalCalc = 0x00;
 	
 	Taddress address = 512;
 	Tbyte valueOut;
+	
+	Tuint08 success = 0x00;
 	
 	while (true)
 	{
         while(address <= 1024)
         {
-            taskWaitForEvent(LOG_TASK_EVENT, 800);
-            TOGGLE_PBLED(PB2);
-            
-            taskMutexRequestOnName(AnalogSample, 1);
-            analogCalc = analogValue;
-            taskMutexReleaseOnName(AnalogSample);
-            
-            while(!portFSWriteReady());
-            valueOut = ~(analogCalc >> 8);
-            portFSWriteByte(address++, valueOut);
-            while(!portFSWriteReady());
-            valueOut = ~(analogCalc);
-            portFSWriteByte(address++, valueOut);
-            
-            taskMutexRequestOnName(DigitalSample, 1);
-            digitalCalc = digitalValue;
-            taskMutexReleaseOnName(DigitalSample);
-            
+		    if (taskWaitForEvent(LOG_TASK_EVENT, 800)) 
+            { // now this task wont log unless it gets the event sent by read task that queue is ready
+				TOGGLE_PBLED(PB2);
+				
+				success = 0x00;
+				while (!success) 
+                { // ensures task was able to read from queue
+					if (taskQueuReadRequestOnName(AnalogSample, 1, 0xFFFF))
+					{
+						analogCalc = genQueuReadOnName(AnalogSample);
+						taskQueuReleaseOnName(AnalogSample);
+						
+						while(!portFSWriteReady());
+						valueOut = ~(analogCalc);
+						portFSWriteByte(address++, valueOut);
+						
+						success = 0x01;
+					}
+				}
+			}			
+        
+            //taskMutexRequestOnName(DigitalSample, 1);
+            //digitalCalc = digitalValue;
+            //taskMutexReleaseOnName(DigitalSample);
+         	/*
             while(!portFSWriteReady());
             valueOut = ~(digitalCalc >> 8);
             portFSWriteByte(address++, valueOut);
             while(!portFSWriteReady());
             valueOut = ~(digitalCalc);
             portFSWriteByte(address++, valueOut);
+			*/
         }
 	}
 }
