@@ -233,7 +233,7 @@
 /* ========================================================================= */
 
 #define  CN_00									 TimerTask
-//#define  CN_01									 ReadTask
+#define  CN_01									 ReadTask
 //#define  CN_02									 CalcTask
 //#define  CN_03									 ReadAndLogTask
 //#define  CN_04									 CalcAndLogTask
@@ -248,7 +248,7 @@
 /* ========================================================================= */
 
 #define  TaskInclude_TimerTask                   cfgStartRunning
-//#define  TaskInclude_ReadTask                    cfgStartRunning
+#define  TaskInclude_ReadTask                    cfgStartRunning
 //#define  TaskInclude_CalcTask                    cfgStartRunning
 //#define  TaskInclude_ReadAndLogTask              cfgStartRunning
 //#define  TaskInclude_CalcAndLogTask              cfgStartRunning
@@ -292,7 +292,7 @@
 /* TASK PRIORITIES ========================================================= */
 /* ========================================================================= */
 
-//#define  PriorityOverride                        0
+#define  PriorityOverride                        0
 #define  Priority_TimerTask                         1
 #define  Priority_ReadTask                      1
 #define  Priority_LogTask                       3

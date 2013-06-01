@@ -52,7 +52,7 @@
 void appBoot(void)
 { 
     devLedDRR    = 0xFF;
-    //devSwitchDRR = 0xFF;
+    devSwitchDRR = 0xFF;
 }
 
 /*
@@ -85,8 +85,7 @@ void appLoop_TimerTask(void)
         {
             currMode = LOG_TASK_EVENT;
         }
-
-        //genFireEvent(currMode);
+        genFireEvent(READ_TASK_EVENT);
         
 #ifdef DEBUG
         TOGGLE_PBLED(PB0);
@@ -118,7 +117,6 @@ void appLoop_TimerTask(void)
 *
 *******************************************************************************
 */
-/*
 #if (preTaskDefined(ReadTask))
 
 void appLoop_ReadTask(void)
@@ -131,12 +129,12 @@ void appLoop_ReadTask(void)
 	{
     	taskWaitForEvent(READ_TASK_EVENT);
 #ifdef DEBUG
-    	TOGGLE_PBLED(PD2);
+    	TOGGLE_PDLED(PD7);
 #endif //DEBUG
 
     	//Get actual values here.
     	//GetSensorData(); // Writes to sensor data queue
-    	
+    	/*
     	taskQueuWriteRequestOnName(AnalogSample, 1);
     	genQueuClearOnName(AnalogSample);
     	genQueuWriteOnName(AnalogSample, analogValue++);
@@ -146,13 +144,13 @@ void appLoop_ReadTask(void)
     	genQueuClearOnName(DigitalSample);
     	genQueuWriteOnName(DigitalSample, digitalValue++);
     	taskQueuReleaseOnName(DigitalSample);
-
+*/
     	//genFireEvent(LOG_TASK_EVENT);
 	}
 }
 
 #endif
-*/
+
 /*
 
 #if (preTaskDefined(CalcTask))
