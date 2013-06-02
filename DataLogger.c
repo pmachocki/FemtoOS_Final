@@ -161,7 +161,7 @@ void appLoop_TimerTask(void)
 void appLoop_ReadTask(void)
 {
 	Tword analogValue = 0xC0FF;
-	Tuint08 digitalValue = 0x00;
+	Tword digitalValue = 0xEE02;
 	Tuint08 success = 0x00;
 	while (true)
 	{
@@ -183,12 +183,24 @@ void appLoop_ReadTask(void)
 	    			genQueuWriteOnName(AnalogSample, (analogValue >> 8));
                     genQueuWriteOnName(AnalogSample, analogValue);
 	    			taskQueuReleaseOnName(AnalogSample);
-				
 					success = 0x01;
-				
-					genFireEvent(LOG_TASK_EVENT); // i fire the log task here to give the read task a chance to write to the queue
     			}
-			}		
+			}
+            
+            success = 0x00;
+            while (!success)
+            {
+                if (taskQueuWriteRequestOnName(DigitalSample, 2, defLockDoNotBlock))
+                {
+                    genQueuClearOnName(DigitalSample);
+                    genQueuWriteOnName(DigitalSample, (digitalValue >> 8));
+                    genQueuWriteOnName(DigitalSample, digitalValue);
+                    taskQueuReleaseOnName(DigitalSample);
+                    success = 0x01;
+                }
+            }	
+            genFireEvent(LOG_TASK_EVENT); // i fire the log task here to give the read task a chance to write to the queue
+	
 		}
     }        
 }
@@ -212,13 +224,13 @@ void appLoop_ReadTask(void)
 
 void appLoop_LogTask(void)
 {	
-	Tword analogCalc = 0x00;
-	//Tword digitalCalc = 0x00;
-	Tuint08 temp;
+	Tword analogCalc;
+	Tword digitalCalc;
+	Tuint08 temp, temp2;
 	Taddress address = 512;
 	Tbyte valueOut;
 	
-	Tuint08 success = 0x00;
+	Tuint08 success;
 	
 	while (true)
 	{
@@ -242,25 +254,35 @@ void appLoop_LogTask(void)
 						while(!portFSWriteReady());
 						valueOut = ~(analogCalc >> 8);
 						portFSWriteByte(address++, valueOut);
+                        while(!portFSWriteReady());
                         valueOut = ~(analogCalc);
                         portFSWriteByte(address++, valueOut);
-						
 						success = 0x01;
 					}
 				}
+                
+                success = 0x00;
+                while (!success)
+                { // ensures task was able to read from queue
+                    if (taskQueuReadRequestOnName(DigitalSample, 2, 0xFFFF))
+                    {
+                        temp = genQueuReadOnName(DigitalSample);
+                        digitalCalc = temp << 8;
+                        temp = genQueuReadOnName(DigitalSample);
+                        digitalCalc |= temp;
+                        taskQueuReleaseOnName(DigitalSample);
+                        
+                        while(!portFSWriteReady());
+                        valueOut = ~(digitalCalc >> 8);
+                        portFSWriteByte(address++, valueOut);
+                        while(!portFSWriteReady());
+                        valueOut = ~(digitalCalc);
+                        portFSWriteByte(address++, valueOut);
+                        success = 0x01;
+                    }
+                }
+                TOGGLE_PBLED(PB2);
 			}			
-        
-            //taskMutexRequestOnName(DigitalSample, 1);
-            //digitalCalc = digitalValue;
-            //taskMutexReleaseOnName(DigitalSample);
-         	/*
-            while(!portFSWriteReady());
-            valueOut = ~(digitalCalc >> 8);
-            portFSWriteByte(address++, valueOut);
-            while(!portFSWriteReady());
-            valueOut = ~(digitalCalc);
-            portFSWriteByte(address++, valueOut);
-			*/
         }
 	}
 }

@@ -355,7 +355,7 @@
 /* ========================================================================= */
 
 #define  QueuSize_AnalogSample                      2
-#define  QueuSize_DigitalSample                     1
+#define  QueuSize_DigitalSample                     2
 #define  QueuSize_AnalogAverage                     1
 #define  QueuSize_DigitalAverage                    1
 #define  QueuSize_ThePipe                           2
