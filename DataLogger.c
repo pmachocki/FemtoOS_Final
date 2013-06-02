@@ -138,6 +138,10 @@ void appLoop_TimerTask(void)
 #endif //DEBUG 
             genFireEvent(LOG_TASK_EVENT);
         }
+        
+        if (tenHz == 250)
+            tenHz = 0;
+               
 		taskDelayFromNow(DELAY_50HZ);
 	} 
 }
@@ -163,24 +167,27 @@ void appLoop_ReadTask(void)
 	while (true)
 	{
     	taskWaitForEvent(READ_TASK_EVENT, 0xff);
+        {
 #ifdef DEBUG
-    	TOGGLE_PDLED(PD7);
+           TOGGLE_PDLED(PD7);
 #endif //DEBUG
-       
-    	//Get actual values here.
-    	//GetSensorData();
-        
-    	if (taskMutexRequestOnName(AnalogSample, defLockDoNotBlock))
-        {
-            analogValue = GetAnalogSensorReading();
-            taskMutexReleaseOnName(AnalogSample);
-        }    
-        
-        if (taskMutexRequestOnName(DigitalSample, defLockDoNotBlock))
-        {
-            digitalValue = 0;
-            taskMutexReleaseOnName(DigitalSample);
-        }        
+           
+           if (taskMutexRequestOnName(AnalogSample, defLockDoNotBlock))
+           {
+               analogValue++; // = GetAnalogSensorReading();
+               taskMutexReleaseOnName(AnalogSample);
+           }
+           
+           if (taskMutexRequestOnName(DigitalSample, defLockDoNotBlock))
+           {
+               digitalValue = 0;
+               taskMutexReleaseOnName(DigitalSample);
+           }
+#ifdef DEBUG
+           TOGGLE_PDLED(PD7);
+#endif //DEBUG 
+        }
+   
 	}
 }
 
@@ -213,30 +220,37 @@ void appLoop_LogTask(void)
 	{
         while(address <= 1024)
         {
-            taskWaitForEvent(LOG_TASK_EVENT, 800);
-            TOGGLE_PBLED(PB2);
-            
-            taskMutexRequestOnName(AnalogSample, 1);
-            analogCalc = analogValue;
-            taskMutexReleaseOnName(AnalogSample);
-            
-            while(!portFSWriteReady());
-            valueOut = ~(analogCalc >> 8);
-            portFSWriteByte(address++, valueOut);
-            while(!portFSWriteReady());
-            valueOut = ~(analogCalc);
-            portFSWriteByte(address++, valueOut);
-            
-            taskMutexRequestOnName(DigitalSample, 1);
-            digitalCalc = digitalValue;
-            taskMutexReleaseOnName(DigitalSample);
-            
-            while(!portFSWriteReady());
-            valueOut = ~(digitalCalc >> 8);
-            portFSWriteByte(address++, valueOut);
-            while(!portFSWriteReady());
-            valueOut = ~(digitalCalc);
-            portFSWriteByte(address++, valueOut);
+            if (taskWaitForEvent(LOG_TASK_EVENT, 800))
+            {
+#ifdef DEBUG
+                TOGGLE_PBLED(PB2);
+#endif //DEBUG
+                taskMutexRequestOnName(AnalogSample, 1);
+                analogCalc = analogValue;
+                taskMutexReleaseOnName(AnalogSample);
+                
+                taskMutexRequestOnName(DigitalSample, 1);
+                digitalCalc = digitalValue;
+                taskMutexReleaseOnName(DigitalSample);
+                
+                while(!portFSWriteReady());
+                valueOut = ~(analogCalc >> 8);
+                portFSWriteByte(address++, valueOut);
+                while(!portFSWriteReady());
+                valueOut = ~(analogCalc);
+                portFSWriteByte(address++, valueOut);
+
+                while(!portFSWriteReady());
+                valueOut = ~(digitalCalc >> 8);
+                portFSWriteByte(address++, valueOut);
+                while(!portFSWriteReady());
+                valueOut = ~(digitalCalc);
+                portFSWriteByte(address++, valueOut);
+#ifdef DEBUG
+                TOGGLE_PBLED(PB2);
+#endif //DEBUG
+            }
+
         }
 	}
 }

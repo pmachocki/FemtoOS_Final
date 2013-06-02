@@ -342,8 +342,8 @@
 /* SLOT USAGE ============================================================== */
 /* ========================================================================= */
 
-#define  SlotUse_AnalogSample                   cfgUseAsQueu
-#define  SlotUse_DigitalSample                  cfgUseAsQueu
+#define  SlotUse_AnalogSample                   cfgUseAsMutex
+#define  SlotUse_DigitalSample                  cfgUseAsMutex
 #define  SlotUse_AnalogAverage                  cfgUseAsQueu
 #define  SlotUse_DigitalAverage                 cfgUseAsQueu
 #define  SlotUse_AnalogSampleSync               cfgUseAsWait
