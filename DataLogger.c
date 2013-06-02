@@ -226,7 +226,7 @@ void appLoop_LogTask(void)
 {	
 	Tword analogCalc;
 	Tword digitalCalc;
-	Tuint08 temp, temp2;
+	Tuint08 temp;
 	Taddress address = 512;
 	Tbyte valueOut;
 	
@@ -237,12 +237,13 @@ void appLoop_LogTask(void)
         while(address <= 1024)
         {
 		    if (taskWaitForEvent(LOG_TASK_EVENT, 800)) 
-            { // now this task wont log unless it gets the event sent by read task that queue is ready
+            {
+#ifdef DEBUG
 				TOGGLE_PBLED(PB2);
-				
+#endif DEBUG
 				success = 0x00;
 				while (!success) 
-                { // ensures task was able to read from queue
+                {
 					if (taskQueuReadRequestOnName(AnalogSample, 2, 0xFFFF))
 					{
                         temp = genQueuReadOnName(AnalogSample);
@@ -250,20 +251,12 @@ void appLoop_LogTask(void)
                         temp = genQueuReadOnName(AnalogSample);
                         analogCalc |= temp;
 						taskQueuReleaseOnName(AnalogSample);
-						
-						while(!portFSWriteReady());
-						valueOut = ~(analogCalc >> 8);
-						portFSWriteByte(address++, valueOut);
-                        while(!portFSWriteReady());
-                        valueOut = ~(analogCalc);
-                        portFSWriteByte(address++, valueOut);
-						success = 0x01;
+                        success = 0x01;
 					}
 				}
-                
                 success = 0x00;
                 while (!success)
-                { // ensures task was able to read from queue
+                {
                     if (taskQueuReadRequestOnName(DigitalSample, 2, 0xFFFF))
                     {
                         temp = genQueuReadOnName(DigitalSample);
@@ -271,17 +264,25 @@ void appLoop_LogTask(void)
                         temp = genQueuReadOnName(DigitalSample);
                         digitalCalc |= temp;
                         taskQueuReleaseOnName(DigitalSample);
-                        
-                        while(!portFSWriteReady());
-                        valueOut = ~(digitalCalc >> 8);
-                        portFSWriteByte(address++, valueOut);
-                        while(!portFSWriteReady());
-                        valueOut = ~(digitalCalc);
-                        portFSWriteByte(address++, valueOut);
                         success = 0x01;
                     }
                 }
+                
+                while(!portFSWriteReady());
+                valueOut = ~(analogCalc >> 8);
+                portFSWriteByte(address++, valueOut);
+                while(!portFSWriteReady());
+                valueOut = ~(analogCalc);
+                portFSWriteByte(address++, valueOut);
+                while(!portFSWriteReady());
+                valueOut = ~(digitalCalc >> 8);
+                portFSWriteByte(address++, valueOut);
+                while(!portFSWriteReady());
+                valueOut = ~(digitalCalc);
+                portFSWriteByte(address++, valueOut);
+#ifdef DEBUG
                 TOGGLE_PBLED(PB2);
+#endif //DEBUG
 			}			
         }
 	}
