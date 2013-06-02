@@ -214,7 +214,7 @@ void appLoop_LogTask(void)
 {	
 	Tword analogCalc = 0x00;
 	//Tword digitalCalc = 0x00;
-	Tuint08 temp, temp2;
+	Tuint08 temp;
 	Taddress address = 512;
 	Tbyte valueOut;
 	
@@ -234,16 +234,16 @@ void appLoop_LogTask(void)
 					if (taskQueuReadRequestOnName(AnalogSample, 2, 0xFFFF))
 					{
                         temp = genQueuReadOnName(AnalogSample);
-						analogCalc = temp;
-                        temp2 = genQueuReadOnName(AnalogSample);
-                        analogCalc = (temp << 8) | analogCalc;
+						analogCalc = temp << 8;
+                        temp = genQueuReadOnName(AnalogSample);
+                        analogCalc |= temp;
 						taskQueuReleaseOnName(AnalogSample);
 						
 						while(!portFSWriteReady());
 						valueOut = ~(analogCalc >> 8);
-						portFSWriteByte(address++, ~temp);
+						portFSWriteByte(address++, valueOut);
                         valueOut = ~(analogCalc);
-                        portFSWriteByte(address++, ~temp2);
+                        portFSWriteByte(address++, valueOut);
 						
 						success = 0x01;
 					}
