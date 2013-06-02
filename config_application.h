@@ -372,5 +372,39 @@
 
 #define  FileSpaceStandard                       0
 
+/* ========================================================================= */
+/* LOCAL DEFINES =========================================================== */
+/* ========================================================================= */
+#define READ_TASK_EVENT 0
+#define LOG_TASK_EVENT 1
+#define DELAY_50HZ 20
+
+#define TOGGLE_PBLED(x) (devLedPORT ^= (1 << x))
+#define TOGGLE_PDLED(x) (devSwitchPORT ^= (1 << x))
+#define TOGGLE_ERRORLED (devSwitchPORT ^= (1 << PB6))
+
+#define DEBUG
+
+#define SENSOR_ADDR 0x3C //0x1E
+#define X_MSB 0
+#define X_LSB 1
+#define Z_MSB 2
+#define Z_LSB 3
+#define Y_MSB 4
+#define Y_LSB 5
+#define SENSOR_RBYTES 6
+#define SENSOR_MODE_REG 0x02
+#define SENSOR_RUN_MODE 0x00
+#define SENSOR_REG 0x03
+
+#define HEADER_LEN 8
+#define HEADER1 0x10
+#define HEADER2 0x14
+#define HEADER3 0x79
+#define HEADER4 0x32
+#define HEADER5 0x0A
+#define HEADER6 0xFF
+#define HEADER7 0x00
+#define HEADER8 0x00
 
 #endif /*CONFIG_TESTHELLOWORLD_H_*/

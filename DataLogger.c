@@ -37,30 +37,6 @@
 #include "femtoos_code.h"
 #include "i2cmaster.h"
 
-/* ========================================================================= */
-/* LOCAL DEFINES =========================================================== */
-/* ========================================================================= */
-#define READ_TASK_EVENT 0
-#define LOG_TASK_EVENT 1
-#define DELAY_50HZ 20
-
-#define TOGGLE_PBLED(x) (devLedPORT ^= (1 << x))
-#define TOGGLE_PDLED(x) (devSwitchPORT ^= (1 << x))
-#define TOGGLE_ERRORLED (devSwitchPORT ^= (1 << PB6))
-
-#define DEBUG
-
-#define SENSOR_ADDR 0x3C //0x1E
-#define X_MSB 0
-#define X_LSB 1
-#define Z_MSB 2
-#define Z_LSB 3
-#define Y_MSB 4
-#define Y_LSB 5
-#define SENSOR_RBYTES 6
-#define SENSOR_MODE_REG 0x02
-#define SENSOR_RUN_MODE 0x00
-#define SENSOR_REG 0x03
 
 /* ========================================================================= */
 /* GLOBAL VARIABLES ======================================================== */
@@ -75,14 +51,18 @@ static Tword GetAnalogSensorReading(void);
 static Tword GetDigitalSensorReading(void); 
 static void InitalizeAnalogSensor(void); 
 static void InitalizeDigitalSensor(void); 
+static void WriteMemoryHeader();
 
-// This function runs when the OS is first initialized
+/**
+ * This function runs when the OS is first initialized
+ */
 void appBoot(void)
 { 
     devLedDRR    = 0xFF;
     devSwitchDRR = 0xFF;
     InitalizeAnalogSensor();
     InitalizeDigitalSensor();
+    WriteMemoryHeader();
 }
 
 /* ========================================================================= */
@@ -147,6 +127,40 @@ void InitalizeDigitalSensor( void )
     i2c_write(SENSOR_RUN_MODE);            // Continuous Measurement Mode
     i2c_stop();
 }
+
+/**
+ * This writes the header to the EEPROM
+ */
+void WriteMemoryHeader()
+{
+    Taddress address = 0;
+    size_t x;
+    size_t y = 0;
+    Tchar valueOut;
+    Tchar header[HEADER_LEN] = {HEADER1, HEADER2, HEADER3, HEADER4, HEADER5, 
+                                HEADER6, HEADER7, HEADER8};
+                                                  
+    while(!portFSWriteReady());
+    portFSWriteByte(address++, ~(header[0]));
+    while(!portFSWriteReady());
+    portFSWriteByte(address++, ~(header[1]));
+    while(!portFSWriteReady());
+    portFSWriteByte(address++, ~(header[2]));
+    while(!portFSWriteReady());
+    portFSWriteByte(address++, ~(header[3]));
+    while(!portFSWriteReady());
+    portFSWriteByte(address++, ~(header[4]));
+    while(!portFSWriteReady());
+    portFSWriteByte(address++, ~(header[5]));
+    while(!portFSWriteReady());
+    portFSWriteByte(address++, ~(header[6]));
+    while(!portFSWriteReady());
+    portFSWriteByte(address++, ~(header[7]));
+    while(!portFSWriteReady());
+    portFSWriteByte(address++, ~(header[8]));
+    TOGGLE_ERRORLED; 
+}
+
 
 /* ========================================================================= */
 /* TASKS =================================================================== */
@@ -232,12 +246,12 @@ void appLoop_LogTask(void)
 	Tword analogCalc = 0x00;
 	Tword digitalCalc = 0x00;
 	
-	Taddress address = 512;
+	Taddress address = (Taddress) HEADER_LEN;
 	Tbyte valueOut;
 	
 	while (true)
 	{
-        while(address <= 1024)
+        while(address <= (Taddress)1024)
         {
             if (taskWaitForEvent(LOG_TASK_EVENT, 800))
             {
