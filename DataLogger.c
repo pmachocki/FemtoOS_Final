@@ -92,7 +92,7 @@ void appBoot(void)
 /**
  * This function returns the ADC value of the accelerometer.
  */
-Tuint16 GetAnalogSensorReading( void )
+Tword GetAnalogSensorReading( void )
 {
     return ADC;
 }
@@ -100,7 +100,7 @@ Tuint16 GetAnalogSensorReading( void )
 /**
  * This function returns the value of one axis of the magnetometer.
  */
-Tuint16 GetDigitalSensorReading( void )
+Tword GetDigitalSensorReading( void )
 {
     uint8_t temp[SENSOR_RBYTES];
     
@@ -203,13 +203,13 @@ void appLoop_ReadTask(void)
            
            if (taskMutexRequestOnName(AnalogSample, defLockDoNotBlock))
            {
-               analogValue++; // = GetAnalogSensorReading();
+               analogValue = GetAnalogSensorReading();
                taskMutexReleaseOnName(AnalogSample);
            }
            
            if (taskMutexRequestOnName(DigitalSample, defLockDoNotBlock))
            {
-               digitalValue = 0;
+               digitalValue = GetDigitalSensorReading();
                taskMutexReleaseOnName(DigitalSample);
            }
 #ifdef DEBUG
@@ -219,7 +219,6 @@ void appLoop_ReadTask(void)
    
 	}
 }
-
 #endif
 
 /**
