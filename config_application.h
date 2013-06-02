@@ -354,7 +354,7 @@
 /* QUEU SIZES ============================================================== */
 /* ========================================================================= */
 
-#define  QueuSize_AnalogSample                      1
+#define  QueuSize_AnalogSample                      2
 #define  QueuSize_DigitalSample                     1
 #define  QueuSize_AnalogAverage                     1
 #define  QueuSize_DigitalAverage                    1

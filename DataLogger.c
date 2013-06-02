@@ -160,7 +160,7 @@ void appLoop_TimerTask(void)
 
 void appLoop_ReadTask(void)
 {
-	Tuint08 analogValue = 0x00;
+	Tword analogValue = 0xC0FF;
 	Tuint08 digitalValue = 0x00;
 	Tuint08 success = 0x00;
 	while (true)
@@ -177,10 +177,11 @@ void appLoop_ReadTask(void)
 			success = 0x00;
 			while (!success) 
             {
-    			if (taskQueuWriteRequestOnName(AnalogSample, 1, defLockDoNotBlock))
+    			if (taskQueuWriteRequestOnName(AnalogSample, 2, defLockDoNotBlock))
     			{
 					genQueuClearOnName(AnalogSample);
-	    			genQueuWriteOnName(AnalogSample, analogValue++);
+	    			genQueuWriteOnName(AnalogSample, (analogValue >> 8));
+                    genQueuWriteOnName(AnalogSample, analogValue);
 	    			taskQueuReleaseOnName(AnalogSample);
 				
 					success = 0x01;
@@ -211,9 +212,9 @@ void appLoop_ReadTask(void)
 
 void appLoop_LogTask(void)
 {	
-	Tuint08 analogCalc = 0x00;
+	Tword analogCalc = 0x00;
 	//Tword digitalCalc = 0x00;
-	
+	Tuint08 temp, temp2;
 	Taddress address = 512;
 	Tbyte valueOut;
 	
@@ -230,14 +231,19 @@ void appLoop_LogTask(void)
 				success = 0x00;
 				while (!success) 
                 { // ensures task was able to read from queue
-					if (taskQueuReadRequestOnName(AnalogSample, 1, 0xFFFF))
+					if (taskQueuReadRequestOnName(AnalogSample, 2, 0xFFFF))
 					{
-						analogCalc = genQueuReadOnName(AnalogSample);
+                        temp = genQueuReadOnName(AnalogSample);
+						analogCalc = temp;
+                        temp2 = genQueuReadOnName(AnalogSample);
+                        analogCalc = (temp << 8) | analogCalc;
 						taskQueuReleaseOnName(AnalogSample);
 						
 						while(!portFSWriteReady());
-						valueOut = ~(analogCalc);
-						portFSWriteByte(address++, valueOut);
+						valueOut = ~(analogCalc >> 8);
+						portFSWriteByte(address++, ~temp);
+                        valueOut = ~(analogCalc);
+                        portFSWriteByte(address++, ~temp2);
 						
 						success = 0x01;
 					}
