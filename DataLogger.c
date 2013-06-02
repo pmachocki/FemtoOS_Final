@@ -35,6 +35,7 @@
 
 /* This this the only include needed in your code .*/
 #include "femtoos_code.h"
+#include "i2cmaster.h"
 
 /* ========================================================================= */
 /* LOCAL DEFINES =========================================================== */
@@ -45,8 +46,21 @@
 
 #define TOGGLE_PBLED(x) (devLedPORT ^= (1 << x))
 #define TOGGLE_PDLED(x) (devSwitchPORT ^= (1 << x))
+#define TOGGLE_ERRORLED (devSwitchPORT ^= (1 << PB6))
 
 #define DEBUG
+
+#define SENSOR_ADDR 0x3C //0x1E
+#define X_MSB 0
+#define X_LSB 1
+#define Z_MSB 2
+#define Z_LSB 3
+#define Y_MSB 4
+#define Y_LSB 5
+#define SENSOR_RBYTES 6
+#define SENSOR_MODE_REG 0x02
+#define SENSOR_RUN_MODE 0x00
+#define SENSOR_REG 0x03
 
 /* ========================================================================= */
 /* GLOBAL VARIABLES ======================================================== */
@@ -68,22 +82,49 @@ void appBoot(void)
     devLedDRR    = 0xFF;
     devSwitchDRR = 0xFF;
     InitalizeAnalogSensor();
+    InitalizeDigitalSensor();
 }
 
 /* ========================================================================= */
 /* HELPER FUNCTIONS ======================================================== */
 /* ========================================================================= */
 
+/**
+ * This function returns the ADC value of the accelerometer.
+ */
 Tuint16 GetAnalogSensorReading( void )
 {
     return ADC;
 }
 
+/**
+ * This function returns the value of one axis of the magnetometer.
+ */
 Tuint16 GetDigitalSensorReading( void )
 {
-    return 0;
+    uint8_t temp[SENSOR_RBYTES];
+    
+    if (i2c_start(SENSOR_ADDR + I2C_WRITE))
+        TOGGLE_ERRORLED;
+    i2c_write(SENSOR_REG);
+    i2c_stop();
+
+    if (i2c_start(SENSOR_ADDR + I2C_READ))
+        TOGGLE_ERRORLED;
+    temp[X_MSB] = i2c_readAck();
+    temp[X_LSB] = i2c_readAck();
+    temp[Z_MSB] = i2c_readAck();
+    temp[Z_LSB] = i2c_readAck();
+    temp[Y_MSB] = i2c_readAck();
+    temp[Y_LSB] = i2c_readNak();
+    i2c_stop();
+    
+    return temp[Y_MSB] << 8 | temp[Y_LSB];
 }
 
+/**
+ * This function initializes our uC for the ADC used to read our accelerometer.
+ */
 void InitalizeAnalogSensor( void )
 {
     // AREF = AVcc, Pin ADC0
@@ -95,28 +136,25 @@ void InitalizeAnalogSensor( void )
     ADCSRA |= (1 << ADSC);
 }
 
+/**
+ * This function initializes our i2c magnetometer.
+ */
 void InitalizeDigitalSensor( void )
 {
-    
+    if (i2c_start(SENSOR_ADDR + I2C_WRITE))
+        TOGGLE_ERRORLED;
+    i2c_write(SENSOR_MODE_REG);            // Select Mode Register
+    i2c_write(SENSOR_RUN_MODE);            // Continuous Measurement Mode
+    i2c_stop();
 }
 
 /* ========================================================================= */
 /* TASKS =================================================================== */
 /* ========================================================================= */
-/*
-*******************************************************************************
-*                               TIMER TASK
-*
-* Description : This is the main timing task. We are running at 50 Hz and
-                triggering a sensor read event at 50 Hz, while triggering a 
-                write event at 10 Hz. 
-*
-* Arguments   : none
-*
-* Returns     : none
-*
-*******************************************************************************
-*/
+/**
+ * This is the main timing task. We are running at 50 Hz and triggering a 
+ * sensor read event at 50 Hz, while triggering a write event at 10 Hz.
+ */
 #if (preTaskDefined(TimerTask))
 
 void appLoop_TimerTask(void)
@@ -147,19 +185,10 @@ void appLoop_TimerTask(void)
 }
 #endif
 
-/*
-*******************************************************************************
-*                               READ TASK
-*
-* Description : This task is responsible for getting sensor values and calc-
-                ulating the average that will be saved in memory.
-*
-* Arguments   : none
-*
-* Returns     : none
-*
-*******************************************************************************
-*/
+/**
+ * This task is responsible for getting sensor values and calculating the 
+ * average that will be saved in memory.
+ */
 #if (preTaskDefined(ReadTask))
 
 void appLoop_ReadTask(void)
@@ -193,19 +222,10 @@ void appLoop_ReadTask(void)
 
 #endif
 
-/*
-*******************************************************************************
-*                               LOG TASK
-*
-* Description : The log task is responsible for writing the calculated sensor
-                values to the EEPROM. This task is running at 10 Hz.
-*
-* Arguments   : none
-*
-* Returns     : none
-*
-*******************************************************************************
-*/
+/**
+ * The log task is responsible for writing the calculated sensor values to the 
+ * EEPROM. This task is running at 10 Hz.
+ */
 #if (preTaskDefined(LogTask))
 
 void appLoop_LogTask(void)
