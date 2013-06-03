@@ -52,6 +52,8 @@ static Tword GetDigitalSensorReading(void);
 static void InitalizeAnalogSensor(void); 
 static void InitalizeDigitalSensor(void); 
 static void WriteMemoryHeader();
+static void increment_ptr(Tuint16 *ptr);
+static void sma_calc(ProcessDataStruct *dataIn, const Tuint16 newValue);
 
 /**
  * This function runs when the OS is first initialized
@@ -158,9 +160,30 @@ void WriteMemoryHeader()
     portFSWriteByte(address++, ~(header[7]));
     while(!portFSWriteReady());
     portFSWriteByte(address++, ~(header[8]));
-    TOGGLE_ERRORLED; 
 }
 
+static void increment_ptr(Tuint16 *ptr)
+{
+    if (*ptr < SAMPLE_SIZE - 1)
+    (*ptr)++;
+    else
+    *ptr = 0;
+}
+
+static void sma_calc(ProcessDataStruct *dataIn, const Tuint16 newValue) {
+
+    dataIn->next_input = newValue;
+    dataIn->oldest_input = dataIn->ring_buf[dataIn->buf_ptr];
+    dataIn->ring_buf[dataIn->buf_ptr] = dataIn->next_input;
+    
+    // Calculate Sum
+    dataIn->next_sum = dataIn->next_sum + dataIn->ring_buf[dataIn->buf_ptr]
+    - dataIn->oldest_input;
+    // Get Average
+    dataIn->next_avg = (dataIn->next_sum * SMA_MULTIPLIER) >> SMA_SHIFT;
+    
+    increment_ptr(&dataIn->buf_ptr);
+}
 
 /* ========================================================================= */
 /* TASKS =================================================================== */
@@ -248,7 +271,10 @@ void appLoop_LogTask(void)
 	
 	Taddress address = (Taddress) HEADER_LEN;
 	Tbyte valueOut;
-	
+
+    ProcessDataStruct analogProcessData;
+    ProcessDataStruct digitalProcessData;
+    	
 	while (true)
 	{
         while(address <= (Taddress)1024)
@@ -258,6 +284,7 @@ void appLoop_LogTask(void)
 #ifdef DEBUG
                 TOGGLE_PBLED(PB2);
 #endif //DEBUG
+                
                 taskMutexRequestOnName(AnalogSample, 1);
                 analogCalc = analogValue;
                 taskMutexReleaseOnName(AnalogSample);
@@ -266,19 +293,26 @@ void appLoop_LogTask(void)
                 digitalCalc = digitalValue;
                 taskMutexReleaseOnName(DigitalSample);
                 
-                while(!portFSWriteReady());
-                valueOut = ~(analogCalc >> 8);
-                portFSWriteByte(address++, valueOut);
-                while(!portFSWriteReady());
-                valueOut = ~(analogCalc);
-                portFSWriteByte(address++, valueOut);
+                sma_calc(&analogProcessData, analogCalc);
+                sma_calc(&digitalProcessData, digitalCalc);
+                
+                //analogCalc = analogProcessData.next_avg;
 
+                valueOut = ~(analogCalc >> 8);
+                while(!portFSWriteReady());
+                portFSWriteByte(address++, valueOut);
+                
+                valueOut = ~(analogCalc);
+                while(!portFSWriteReady());
+                portFSWriteByte(address++, valueOut);
+           
                 while(!portFSWriteReady());
                 valueOut = ~(digitalCalc >> 8);
                 portFSWriteByte(address++, valueOut);
                 while(!portFSWriteReady());
                 valueOut = ~(digitalCalc);
                 portFSWriteByte(address++, valueOut);
+                
 #ifdef DEBUG
                 TOGGLE_PBLED(PB2);
 #endif //DEBUG

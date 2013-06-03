@@ -407,4 +407,28 @@
 #define HEADER7 0x00
 #define HEADER8 0x00
 
+#define SAMPLE_SIZE 10
+#define SMA_MULTIPLIER 3277
+#define SMA_SHIFT 15
+#define CMA_DIVISOR 32767
+#define CMA_SHIFT 15
+#define EMA_MULTIPLIER 1
+#define EMA_SHIFT 1
+#define WMA_MULTIPLIER 596
+#define WMA_SHIFT 15
+#define MMA_SHIFT 1
+
+typedef struct
+{
+    Tuint16 ring_buf[SAMPLE_SIZE];
+    Tuint16 sort_buf[SAMPLE_SIZE];
+    Tuint16 next_input;	// 16-bit
+    Tword next_avg;      // 32-bit
+    uint32_t next_sum;
+    Tuint16 oldest_input;
+    Tuint16 buf_ptr;
+    Tword prev_avg;
+    Tuint16 sample_count;
+} ProcessDataStruct;
+
 #endif /*CONFIG_TESTHELLOWORLD_H_*/
