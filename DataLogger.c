@@ -64,7 +64,6 @@ void appBoot(void)
     devSwitchDRR = 0xFF;
     InitalizeAnalogSensor();
     InitalizeDigitalSensor();
-    WriteMemoryHeader();
 }
 
 /* ========================================================================= */
@@ -136,12 +135,9 @@ void InitalizeDigitalSensor( void )
 void WriteMemoryHeader()
 {
     Taddress address = 0;
-    size_t x;
-    size_t y = 0;
-    Tchar valueOut;
     Tchar header[HEADER_LEN] = {HEADER1, HEADER2, HEADER3, HEADER4, HEADER5, 
                                 HEADER6, HEADER7, HEADER8};
-                                                  
+                                
     while(!portFSWriteReady());
     portFSWriteByte(address++, ~(header[0]));
     while(!portFSWriteReady());
@@ -158,8 +154,6 @@ void WriteMemoryHeader()
     portFSWriteByte(address++, ~(header[6]));
     while(!portFSWriteReady());
     portFSWriteByte(address++, ~(header[7]));
-    while(!portFSWriteReady());
-    portFSWriteByte(address++, ~(header[8]));
 }
 
 static void increment_ptr(Tuint16 *ptr)
@@ -272,19 +266,20 @@ void appLoop_LogTask(void)
 	Taddress address = (Taddress) HEADER_LEN;
 	Tbyte valueOut;
 
-    ProcessDataStruct analogProcessData;
-    ProcessDataStruct digitalProcessData;
-    	
+    static ProcessDataStruct analogProcessData;
+    static ProcessDataStruct digitalProcessData;
+    
+    WriteMemoryHeader();
+        
 	while (true)
 	{
-        while(address <= (Taddress)1016)
+        while(address < (Taddress) MEMORY_MAX)
         {
             if (taskWaitForEvent(LOG_TASK_EVENT, 800))
             {
 #ifdef DEBUG
                 TOGGLE_PBLED(PB2);
 #endif //DEBUG
-                
                 taskMutexRequestOnName(AnalogSample, 1);
                 analogCalc = analogValue;
                 taskMutexReleaseOnName(AnalogSample);
@@ -306,19 +301,19 @@ void appLoop_LogTask(void)
                 valueOut = ~(analogCalc);
                 while(!portFSWriteReady());
                 portFSWriteByte(address++, valueOut);
-           
-                while(!portFSWriteReady());
+                
                 valueOut = ~(digitalCalc >> 8);
-                portFSWriteByte(address++, valueOut);
                 while(!portFSWriteReady());
+                portFSWriteByte(address++, valueOut);
+                
                 valueOut = ~(digitalCalc);
+                while(!portFSWriteReady());
                 portFSWriteByte(address++, valueOut);
                 
 #ifdef DEBUG
                 TOGGLE_PBLED(PB2);
 #endif //DEBUG
             }
-
         }
 	}
 }

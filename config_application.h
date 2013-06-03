@@ -418,7 +418,7 @@
 #define WMA_SHIFT 15
 #define MMA_SHIFT 1
 
-//#ifndef __ASSEMBLER__
+#ifndef __ASSEMBLER__
 typedef struct
 {
     Tuint16 ring_buf[SAMPLE_SIZE];
@@ -431,6 +431,6 @@ typedef struct
     Tword prev_avg;
     Tuint16 sample_count;
 } ProcessDataStruct;
-//#endif
+#endif 
 
 #endif /*CONFIG_TESTHELLOWORLD_H_*/
