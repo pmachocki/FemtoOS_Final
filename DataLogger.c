@@ -277,7 +277,7 @@ void appLoop_LogTask(void)
     	
 	while (true)
 	{
-        while(address <= (Taddress)1024)
+        while(address <= (Taddress)1016)
         {
             if (taskWaitForEvent(LOG_TASK_EVENT, 800))
             {
@@ -296,7 +296,8 @@ void appLoop_LogTask(void)
                 sma_calc(&analogProcessData, analogCalc);
                 sma_calc(&digitalProcessData, digitalCalc);
                 
-                //analogCalc = analogProcessData.next_avg;
+                analogCalc = analogProcessData.next_avg;
+                digitalCalc = digitalProcessData.next_avg;
 
                 valueOut = ~(analogCalc >> 8);
                 while(!portFSWriteReady());

@@ -259,7 +259,7 @@
 #define  StackSizeOS                             24
 #define  StackSizeISR                            0
 #define  StackSizeShared                         0
-#define  StackSizeOverride                       46
+#define  StackSizeOverride                       256
 
 
 /* ========================================================================= */
@@ -418,6 +418,7 @@
 #define WMA_SHIFT 15
 #define MMA_SHIFT 1
 
+//#ifndef __ASSEMBLER__
 typedef struct
 {
     Tuint16 ring_buf[SAMPLE_SIZE];
@@ -430,5 +431,6 @@ typedef struct
     Tword prev_avg;
     Tuint16 sample_count;
 } ProcessDataStruct;
+//#endif
 
 #endif /*CONFIG_TESTHELLOWORLD_H_*/
