@@ -378,6 +378,7 @@
 #define READ_TASK_EVENT 0
 #define LOG_TASK_EVENT 1
 #define DELAY_50HZ 20
+#define MEMORY_MAX 1024
 
 #define TOGGLE_PBLED(x) (devLedPORT ^= (1 << x))
 #define TOGGLE_PDLED(x) (devSwitchPORT ^= (1 << x))
@@ -417,6 +418,12 @@
 #define WMA_MULTIPLIER 596
 #define WMA_SHIFT 15
 #define MMA_SHIFT 1
+
+#define SMA_ALG 0
+#define CMA_ALG 1
+#define EMA_ALG 2
+#define WMA_ALG 3
+#define MMA_ALG 4
 
 #ifndef __ASSEMBLER__
 typedef struct

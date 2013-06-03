@@ -43,6 +43,7 @@
 /* ========================================================================= */
 Tuint16 analogValue = 0x00;
 Tuint16 digitalValue = 0x00;
+Tuint08 algorithm = SMA_ALG;
 
 /* ========================================================================= */
 /* FUNCTION PROTOTYPES ===================================================== */
@@ -54,7 +55,10 @@ static void InitalizeDigitalSensor(void);
 static void WriteMemoryHeader();
 static void increment_ptr(Tuint16 *ptr);
 static void sma_calc(ProcessDataStruct *dataIn, const Tuint16 newValue);
-
+static void cma_calc(ProcessDataStruct *dataIn, const Tuint16 newValue);
+static void ema_calc(ProcessDataStruct *dataIn, const Tuint16 newValue);
+static void wma_calc(ProcessDataStruct *dataIn, const Tuint16 newValue);
+static void mma_calc(ProcessDataStruct *dataIn, const Tuint16 newValue);
 /**
  * This function runs when the OS is first initialized
  */
@@ -73,7 +77,7 @@ void appBoot(void)
 /**
  * This function returns the ADC value of the accelerometer.
  */
-Tword GetAnalogSensorReading( void )
+static Tword GetAnalogSensorReading( void )
 {
     return ADC;
 }
@@ -81,7 +85,7 @@ Tword GetAnalogSensorReading( void )
 /**
  * This function returns the value of one axis of the magnetometer.
  */
-Tword GetDigitalSensorReading( void )
+static Tword GetDigitalSensorReading( void )
 {
     uint8_t temp[SENSOR_RBYTES];
     
@@ -106,7 +110,7 @@ Tword GetDigitalSensorReading( void )
 /**
  * This function initializes our uC for the ADC used to read our accelerometer.
  */
-void InitalizeAnalogSensor( void )
+static void InitalizeAnalogSensor( void )
 {
     // AREF = AVcc, Pin ADC0
     ADMUX = (1 << REFS0);
@@ -120,7 +124,7 @@ void InitalizeAnalogSensor( void )
 /**
  * This function initializes our i2c magnetometer.
  */
-void InitalizeDigitalSensor( void )
+static void InitalizeDigitalSensor( void )
 {
     if (i2c_start(SENSOR_ADDR + I2C_WRITE))
         TOGGLE_ERRORLED;
@@ -132,7 +136,7 @@ void InitalizeDigitalSensor( void )
 /**
  * This writes the header to the EEPROM
  */
-void WriteMemoryHeader()
+static void WriteMemoryHeader()
 {
     Taddress address = 0;
     Tchar header[HEADER_LEN] = {HEADER1, HEADER2, HEADER3, HEADER4, HEADER5, 
@@ -177,6 +181,90 @@ static void sma_calc(ProcessDataStruct *dataIn, const Tuint16 newValue) {
     dataIn->next_avg = (dataIn->next_sum * SMA_MULTIPLIER) >> SMA_SHIFT;
     
     increment_ptr(&dataIn->buf_ptr);
+}
+
+static void cma_calc(ProcessDataStruct *dataIn, const Tuint16 newValue) {
+    uint32_t multiplier, temp, first_calc, second_calc;
+
+    dataIn->next_input = newValue;
+    dataIn->sample_count++;
+    
+    multiplier = 0;
+    temp = dataIn->sample_count;
+    while(temp <= CMA_DIVISOR) { // calculate multiplier
+    temp += dataIn->sample_count;
+    multiplier++;
+}
+
+// this logic only good for the first 32767 samples
+first_calc = dataIn->prev_avg;
+if (dataIn->next_input >= dataIn->prev_avg) {
+    second_calc = ((dataIn->next_input - dataIn->prev_avg) * multiplier)
+    >> CMA_SHIFT;
+    dataIn->next_avg = first_calc + second_calc;
+}
+else {
+    second_calc = ((dataIn->prev_avg - dataIn->next_input) * multiplier)
+    >> CMA_SHIFT;
+    dataIn->next_avg = first_calc - second_calc;
+}
+dataIn->prev_avg = dataIn->next_avg;
+}
+
+static void ema_calc(ProcessDataStruct *dataIn, const Tuint16 newValue) 
+{
+    uint32_t first_calc, second_calc, third_calc;
+    dataIn->next_input = newValue;
+    
+    first_calc = (dataIn->next_input * EMA_MULTIPLIER) >> EMA_SHIFT;
+    second_calc = dataIn->prev_avg;
+    third_calc = (dataIn->prev_avg * EMA_MULTIPLIER) >> EMA_SHIFT;
+    dataIn->next_avg = second_calc - third_calc;
+    dataIn->next_avg += first_calc;
+    dataIn->prev_avg = dataIn->next_avg;
+}
+
+static void wma_calc(ProcessDataStruct *dataIn, const Tuint16 newValue) {
+    int buf_index = dataIn->buf_ptr;
+    int weight = 1;
+    
+    dataIn->next_input = newValue;
+    dataIn->ring_buf[dataIn->buf_ptr] = dataIn->next_input;
+    
+    dataIn->next_sum = 0; // clear sum
+    increment_ptr(&dataIn->buf_ptr); // start at oldest index
+    while (dataIn->buf_ptr != buf_index) { // apply weights
+        dataIn->next_sum += dataIn->ring_buf[dataIn->buf_ptr] * weight;
+        weight++;
+        increment_ptr(&dataIn->buf_ptr); // prep for next sample
+    }
+    // apply last weight
+    dataIn->next_sum += dataIn->ring_buf[dataIn->buf_ptr] * weight; 
+    dataIn->next_avg = (dataIn->next_sum * WMA_MULTIPLIER) >> WMA_SHIFT;
+    increment_ptr(&dataIn->buf_ptr); // prep for next sample
+}
+
+static void mma_calc(ProcessDataStruct *dataIn, const Tuint16 newValue) {
+    int i, j, temp, mid_index;
+    
+    dataIn->next_input = newValue;
+    dataIn->ring_buf[dataIn->buf_ptr] = dataIn->next_input; // update buffer
+    
+    // run insertion sort
+    dataIn->sort_buf[0] = dataIn->ring_buf[0]; // lazy fill sortable buffer
+    for (i = 1; i < SAMPLE_SIZE; i++) {
+        dataIn->sort_buf[i] = dataIn->ring_buf[i]; // lazy fill sortable buffer
+        temp = dataIn->sort_buf[i];
+        for (j = i; j >= 1 && temp < dataIn->sort_buf[j - 1]; j--) {
+            dataIn->sort_buf[j] = dataIn->sort_buf[j - 1];
+        }
+        dataIn->sort_buf[j] = temp;
+    }
+    mid_index = SAMPLE_SIZE >> 1; // only works with even sample counts
+    dataIn->next_sum = dataIn->sort_buf[mid_index] + 
+                        dataIn->sort_buf[mid_index - 1]; // calculate sum
+    dataIn->next_avg = dataIn->next_sum >> MMA_SHIFT;
+    increment_ptr(&dataIn->buf_ptr); // prep for next sample
 }
 
 /* ========================================================================= */
@@ -224,6 +312,9 @@ void appLoop_TimerTask(void)
 
 void appLoop_ReadTask(void)
 {
+    static ProcessDataStruct analogProcessData;
+    static ProcessDataStruct digitalProcessData;
+    
 	while (true)
 	{
     	taskWaitForEvent(READ_TASK_EVENT, 0xff);
@@ -243,6 +334,42 @@ void appLoop_ReadTask(void)
                digitalValue = GetDigitalSensorReading();
                taskMutexReleaseOnName(DigitalSample);
            }
+           
+            switch(algorithm)
+            {
+                case SMA_ALG:
+                    sma_calc(&analogProcessData, analogValue);
+                    sma_calc(&digitalProcessData, digitalValue);
+                    break;
+                case CMA_ALG:
+                    cma_calc(&analogProcessData, analogValue);
+                    cma_calc(&digitalProcessData, digitalValue);
+                    break;
+                case EMA_ALG:
+                    ema_calc(&analogProcessData, analogValue);
+                    ema_calc(&digitalProcessData, digitalValue);
+                    break;
+                case WMA_ALG:
+                    wma_calc(&analogProcessData, analogValue);
+                    wma_calc(&digitalProcessData, digitalValue);
+                    break;
+                case MMA_ALG:
+                    mma_calc(&analogProcessData, analogValue);
+                    mma_calc(&digitalProcessData, digitalValue);
+                    break;
+            }
+            
+            if (taskMutexRequestOnName(AnalogSample, defLockDoNotBlock))
+            {
+                analogValue = analogProcessData.next_avg;
+                taskMutexReleaseOnName(AnalogSample);
+            }
+            
+            if (taskMutexRequestOnName(DigitalSample, defLockDoNotBlock))
+            {
+                digitalValue = digitalProcessData.next_avg;
+                taskMutexReleaseOnName(DigitalSample);
+            }            
 #ifdef DEBUG
            TOGGLE_PDLED(PD7);
 #endif //DEBUG 
@@ -265,9 +392,6 @@ void appLoop_LogTask(void)
 	
 	Taddress address = (Taddress) HEADER_LEN;
 	Tbyte valueOut;
-
-    static ProcessDataStruct analogProcessData;
-    static ProcessDataStruct digitalProcessData;
     
     WriteMemoryHeader();
         
@@ -287,12 +411,6 @@ void appLoop_LogTask(void)
                 taskMutexRequestOnName(DigitalSample, 1);
                 digitalCalc = digitalValue;
                 taskMutexReleaseOnName(DigitalSample);
-                
-                sma_calc(&analogProcessData, analogCalc);
-                sma_calc(&digitalProcessData, digitalCalc);
-                
-                analogCalc = analogProcessData.next_avg;
-                digitalCalc = digitalProcessData.next_avg;
 
                 valueOut = ~(analogCalc >> 8);
                 while(!portFSWriteReady());
