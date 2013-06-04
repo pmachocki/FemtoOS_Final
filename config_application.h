@@ -431,7 +431,7 @@ typedef struct
     Tuint16 ring_buf[SAMPLE_SIZE];
     Tuint16 sort_buf[SAMPLE_SIZE];
     Tuint16 next_input;	// 16-bit
-    Tword next_avg;      // 32-bit
+    uint32_t next_avg;      // 32-bit
     uint32_t next_sum;
     Tuint16 oldest_input;
     Tuint16 buf_ptr;

@@ -105,7 +105,7 @@ static Tword GetDigitalSensorReading( void )
     temp[Y_LSB] = i2c_readNak();
     i2c_stop();
     
-    return temp[Y_MSB] << 8 | temp[Y_LSB];
+    return temp[Z_MSB] << 8 | temp[Z_LSB];
 }
 
 /**
