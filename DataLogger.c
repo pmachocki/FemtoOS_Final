@@ -43,7 +43,7 @@
 /* ========================================================================= */
 Tuint16 analogValue = 0x00;
 Tuint16 digitalValue = 0x00;
-Tuint08 algorithm = SMA_ALG;
+Tuint08 algorithm = EMA_ALG;
 
 /* ========================================================================= */
 /* FUNCTION PROTOTYPES ===================================================== */
@@ -105,7 +105,7 @@ static Tword GetDigitalSensorReading( void )
     temp[Y_LSB] = i2c_readNak();
     i2c_stop();
     
-    return temp[Z_MSB] << 8 | temp[Z_LSB];
+    return temp[X_MSB] << 8 | temp[X_LSB];
 }
 
 /**
@@ -324,6 +324,9 @@ void appLoop_ReadTask(void)
     static ProcessDataStruct analogProcessData;
     static ProcessDataStruct digitalProcessData;
     
+    digitalProcessData.next_avg = 0;
+    digitalProcessData.prev_avg = 0;
+    
 	while (true)
 	{
     	taskWaitForEvent(READ_TASK_EVENT, 0xff);
@@ -397,6 +400,7 @@ void appLoop_LogTask(void)
 {	
 	Tword analogCalc = 0x00;
 	Tword digitalCalc = 0x00;
+    Tbool writeReady = false;
 	
 	Taddress address = (Taddress) HEADER_LEN;
 	Tbyte valueOut;
@@ -420,21 +424,27 @@ void appLoop_LogTask(void)
                 digitalCalc = digitalValue;
                 taskMutexReleaseOnName(DigitalSample);
 
-                valueOut = ~(digitalCalc >> 8);
-                while(!portFSWriteReady());
-                portFSWriteByte(address++, valueOut);
+                if (writeReady)
+                {
+                    valueOut = ~(digitalCalc >> 8);
+                    while(!portFSWriteReady());
+                    portFSWriteByte(address++, valueOut);
+                    
+                    valueOut = ~(digitalCalc);
+                    while(!portFSWriteReady());
+                    portFSWriteByte(address++, valueOut);
+                    
+                    valueOut = ~(analogCalc >> 8);
+                    while(!portFSWriteReady());
+                    portFSWriteByte(address++, valueOut);
+                    
+                    valueOut = ~(analogCalc);
+                    while(!portFSWriteReady());
+                    portFSWriteByte(address++, valueOut);
+                }
                 
-                valueOut = ~(digitalCalc);
-                while(!portFSWriteReady());
-                portFSWriteByte(address++, valueOut);
-                
-                valueOut = ~(analogCalc >> 8);
-                while(!portFSWriteReady());
-                portFSWriteByte(address++, valueOut);
-                
-                valueOut = ~(analogCalc);
-                while(!portFSWriteReady());
-                portFSWriteByte(address++, valueOut);
+                if (!writeReady)
+                    writeReady = true;
 #ifdef DEBUG
                 TOGGLE_PBLED(PB2);
 #endif //DEBUG
