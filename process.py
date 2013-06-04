@@ -29,6 +29,10 @@ for x in range(0, len(dArray), 2):
     dValue |= int(dArray.pop(0), 16)
     aValue = int(aArray.pop(0), 16) << 8
     aValue |= int(aArray.pop(0), 16)
+    if dValue > 32768:
+    	dValue = dValue - 65536
+    if aValue > 32768:
+		aValue = aValue - 65536
     dOut.append(dValue)
     aOut.append(aValue)
     #print "d:" + str(dValue) + "a:" + str(aValue)
