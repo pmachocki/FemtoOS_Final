@@ -59,6 +59,7 @@ static void cma_calc(ProcessDataStruct *dataIn, const Tuint16 newValue);
 static void ema_calc(ProcessDataStruct *dataIn, const Tuint16 newValue);
 static void wma_calc(ProcessDataStruct *dataIn, const Tuint16 newValue);
 static void mma_calc(ProcessDataStruct *dataIn, const Tuint16 newValue);
+
 /**
  * This function runs when the OS is first initialized
  */
@@ -168,8 +169,8 @@ static void increment_ptr(Tuint16 *ptr)
     *ptr = 0;
 }
 
-static void sma_calc(ProcessDataStruct *dataIn, const Tuint16 newValue) {
-
+static void sma_calc(ProcessDataStruct *dataIn, const Tuint16 newValue) 
+{
     dataIn->next_input = newValue;
     dataIn->oldest_input = dataIn->ring_buf[dataIn->buf_ptr];
     dataIn->ring_buf[dataIn->buf_ptr] = dataIn->next_input;
@@ -183,7 +184,8 @@ static void sma_calc(ProcessDataStruct *dataIn, const Tuint16 newValue) {
     increment_ptr(&dataIn->buf_ptr);
 }
 
-static void cma_calc(ProcessDataStruct *dataIn, const Tuint16 newValue) {
+static void cma_calc(ProcessDataStruct *dataIn, const Tuint16 newValue) 
+{
     uint32_t multiplier, temp, first_calc, second_calc;
 
     dataIn->next_input = newValue;
@@ -191,24 +193,27 @@ static void cma_calc(ProcessDataStruct *dataIn, const Tuint16 newValue) {
     
     multiplier = 0;
     temp = dataIn->sample_count;
-    while(temp <= CMA_DIVISOR) { // calculate multiplier
-    temp += dataIn->sample_count;
-    multiplier++;
-}
+    while(temp <= CMA_DIVISOR) 
+    { // calculate multiplier
+        temp += dataIn->sample_count;
+        multiplier++;
+    }
 
-// this logic only good for the first 32767 samples
-first_calc = dataIn->prev_avg;
-if (dataIn->next_input >= dataIn->prev_avg) {
-    second_calc = ((dataIn->next_input - dataIn->prev_avg) * multiplier)
-    >> CMA_SHIFT;
-    dataIn->next_avg = first_calc + second_calc;
-}
-else {
-    second_calc = ((dataIn->prev_avg - dataIn->next_input) * multiplier)
-    >> CMA_SHIFT;
-    dataIn->next_avg = first_calc - second_calc;
-}
-dataIn->prev_avg = dataIn->next_avg;
+    // this logic only good for the first 32767 samples
+    first_calc = dataIn->prev_avg;
+    if (dataIn->next_input >= dataIn->prev_avg) 
+    {
+        second_calc = ((dataIn->next_input - dataIn->prev_avg) * multiplier)
+                        >> CMA_SHIFT;
+        dataIn->next_avg = first_calc + second_calc;
+    }
+    else 
+    {
+        second_calc = ((dataIn->prev_avg - dataIn->next_input) * multiplier)
+                        >> CMA_SHIFT;
+        dataIn->next_avg = first_calc - second_calc;
+    }
+    dataIn->prev_avg = dataIn->next_avg;
 }
 
 static void ema_calc(ProcessDataStruct *dataIn, const Tuint16 newValue) 
@@ -224,7 +229,8 @@ static void ema_calc(ProcessDataStruct *dataIn, const Tuint16 newValue)
     dataIn->prev_avg = dataIn->next_avg;
 }
 
-static void wma_calc(ProcessDataStruct *dataIn, const Tuint16 newValue) {
+static void wma_calc(ProcessDataStruct *dataIn, const Tuint16 newValue) 
+{
     int buf_index = dataIn->buf_ptr;
     int weight = 1;
     
@@ -233,7 +239,8 @@ static void wma_calc(ProcessDataStruct *dataIn, const Tuint16 newValue) {
     
     dataIn->next_sum = 0; // clear sum
     increment_ptr(&dataIn->buf_ptr); // start at oldest index
-    while (dataIn->buf_ptr != buf_index) { // apply weights
+    while (dataIn->buf_ptr != buf_index) 
+    {   // apply weights
         dataIn->next_sum += dataIn->ring_buf[dataIn->buf_ptr] * weight;
         weight++;
         increment_ptr(&dataIn->buf_ptr); // prep for next sample
@@ -244,7 +251,8 @@ static void wma_calc(ProcessDataStruct *dataIn, const Tuint16 newValue) {
     increment_ptr(&dataIn->buf_ptr); // prep for next sample
 }
 
-static void mma_calc(ProcessDataStruct *dataIn, const Tuint16 newValue) {
+static void mma_calc(ProcessDataStruct *dataIn, const Tuint16 newValue) 
+{
     int i, j, temp, mid_index;
     
     dataIn->next_input = newValue;
@@ -252,10 +260,12 @@ static void mma_calc(ProcessDataStruct *dataIn, const Tuint16 newValue) {
     
     // run insertion sort
     dataIn->sort_buf[0] = dataIn->ring_buf[0]; // lazy fill sortable buffer
-    for (i = 1; i < SAMPLE_SIZE; i++) {
+    for (i = 1; i < SAMPLE_SIZE; i++) 
+    {
         dataIn->sort_buf[i] = dataIn->ring_buf[i]; // lazy fill sortable buffer
         temp = dataIn->sort_buf[i];
-        for (j = i; j >= 1 && temp < dataIn->sort_buf[j - 1]; j--) {
+        for (j = i; j >= 1 && temp < dataIn->sort_buf[j - 1]; j--) 
+        {
             dataIn->sort_buf[j] = dataIn->sort_buf[j - 1];
         }
         dataIn->sort_buf[j] = temp;
@@ -298,7 +308,6 @@ void appLoop_TimerTask(void)
         
         if (tenHz == 250)
             tenHz = 0;
-               
 		taskDelayFromNow(DELAY_50HZ);
 	} 
 }
@@ -374,7 +383,6 @@ void appLoop_ReadTask(void)
            TOGGLE_PDLED(PD7);
 #endif //DEBUG 
         }
-   
 	}
 }
 #endif
@@ -412,14 +420,6 @@ void appLoop_LogTask(void)
                 digitalCalc = digitalValue;
                 taskMutexReleaseOnName(DigitalSample);
 
-                valueOut = ~(analogCalc >> 8);
-                while(!portFSWriteReady());
-                portFSWriteByte(address++, valueOut);
-                
-                valueOut = ~(analogCalc);
-                while(!portFSWriteReady());
-                portFSWriteByte(address++, valueOut);
-                
                 valueOut = ~(digitalCalc >> 8);
                 while(!portFSWriteReady());
                 portFSWriteByte(address++, valueOut);
@@ -428,6 +428,13 @@ void appLoop_LogTask(void)
                 while(!portFSWriteReady());
                 portFSWriteByte(address++, valueOut);
                 
+                valueOut = ~(analogCalc >> 8);
+                while(!portFSWriteReady());
+                portFSWriteByte(address++, valueOut);
+                
+                valueOut = ~(analogCalc);
+                while(!portFSWriteReady());
+                portFSWriteByte(address++, valueOut);
 #ifdef DEBUG
                 TOGGLE_PBLED(PB2);
 #endif //DEBUG
@@ -436,5 +443,3 @@ void appLoop_LogTask(void)
 	}
 }
 #endif
-
-
